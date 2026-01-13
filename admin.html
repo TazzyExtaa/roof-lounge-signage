@@ -1,22 +1,77 @@
-<div class="container">
-    <h2>Roof Lounge Multi-Control</h2>
-    <input type="text" id="screenId" placeholder="Ekran ID (Örn: salon1, bar2)">
-    <input type="text" id="url" placeholder="Görsel veya Video Linki">
-    <button class="btn-img" onclick="update('image')">Seçili Ekrana Gönder</button>
-</div>
-
-<script>
-    async function update(type) {
-        const screenId = document.getElementById('screenId').value;
-        const url = document.getElementById('url').value;
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Roof Lounge Kumanda Merkezi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #121212; color: #e0e0e0; text-align: center; }
+        .container { max-width: 500px; margin: auto; background: #1e1e1e; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h2 { color: #ffcc00; margin-bottom: 20px; }
         
-        if(!screenId || !url) return alert("Eksik bilgi!");
+        .section { background: #2a2a2a; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333; }
+        label { display: block; text-align: left; font-size: 13px; color: #aaa; margin-bottom: 5px; margin-left: 5px; }
+        
+        input { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #444; background: #333; color: white; font-size: 15px; box-sizing: border-box; }
+        
+        .link-display { background: #000; color: #00ff00; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 13px; word-break: break-all; margin-top: 5px; border: 1px dashed #00ff00; }
+        
+        button { width: 100%; padding: 15px; margin-top: 10px; font-size: 16px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-img { background: #007bff; color: white; }
+        .btn-vid { background: #28a745; color: white; }
+        button:hover { opacity: 0.8; transform: translateY(-2px); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Roof Lounge Control</h2>
 
-        await fetch('/update-content', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ screenId, type, url })
-        });
-        alert(screenId + ' güncellendi!');
-    }
-</script>
+        <div class="section">
+            <label>1. Ekran Kimliği Belirle (TV'ye Özel):</label>
+            <input type="text" id="screenId" placeholder="Örn: salon1, bar-ekran, giris" oninput="generateLink()">
+            
+            <label>TV Tarayıcısına Girilecek Link:</label>
+            <div id="generatedLink" class="link-display">ID Yazınca Link Oluşacak...</div>
+        </div>
+
+        <div class="section">
+            <label>2. Yansıtılacak İçerik Linki:</label>
+            <input type="text" id="url" placeholder="https://resim-veya-video-linki.com">
+            
+            <button class="btn-img" onclick="update('image')">Resmi TV'ye Gönder</button>
+            <button class="btn-vid" onclick="update('video')">Videoyu TV'ye Gönder</button>
+        </div>
+    </div>
+
+    <script>
+        // Sayfa yüklendiğinde ve ID girildiğinde linki oluşturur
+        function generateLink() {
+            const screenId = document.getElementById('screenId').value;
+            const displayDiv = document.getElementById('generatedLink');
+            
+            if(screenId) {
+                // Mevcut sitenin ana adresini alıp sonuna player.html ekler
+                const fullLink = window.location.origin + "/player.html?id=" + screenId;
+                displayDiv.innerText = fullLink;
+            } else {
+                displayDiv.innerText = "ID Yazınca Link Oluşacak...";
+            }
+        }
+
+        async function update(type) {
+            const screenId = document.getElementById('screenId').value;
+            const url = document.getElementById('url').value;
+            
+            if(!screenId || !url) return alert("Lütfen hem Ekran ID hem de içerik linkini girin!");
+
+            const response = await fetch('/update-content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ screenId, type, url })
+            });
+            
+            if(response.ok) alert(screenId + ' isimli ekran güncellendi!');
+            else alert('Bir hata oluştu!');
+        }
+    </script>
+</body>
+</html>
