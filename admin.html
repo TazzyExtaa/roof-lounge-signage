@@ -5,18 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: 'Inter', sans-serif; background: #121212; color: white; padding: 20px; }
-        .container { max-width: 800px; margin: auto; }
+        .container { max-width: 1000px; margin: auto; }
         .card { background: #1e1e1e; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333; }
         input, button { width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; border: 1px solid #444; box-sizing: border-box; }
         input { background: #2a2a2a; color: white; }
         button { background: #007bff; color: white; cursor: pointer; border: none; font-weight: bold; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+        th { background: #2a2a2a; color: #aaa; }
+        
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
         .online { background: #28a745; color: white; }
         .offline { background: #dc3545; color: white; }
-        .edit-btn { background: #ffcc00; color: black; padding: 5px 10px; font-size: 12px; width: auto; }
+        
+        .player-link { font-family: monospace; color: #00ff00; background: #000; padding: 5px; border-radius: 4px; font-size: 12px; border: 1px dashed #333; cursor: pointer; }
+        .edit-btn { background: #ffcc00; color: black; padding: 5px 10px; font-size: 12px; width: auto; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -26,17 +30,18 @@
         <div class="card">
             <h3>İçerik Gönder / Düzenle</h3>
             <input type="text" id="screenId" placeholder="Ekran Kimliği (Örn: salon1)">
-            <input type="text" id="url" placeholder="İçerik Linki (.jpg veya .mp4)">
+            <input type="text" id="url" placeholder="Görsel Linki (.jpg, .png) veya Video Linki (.mp4)">
             <button onclick="sendUpdate()">Ekrana Yansıt</button>
         </div>
 
         <div class="card">
-            <h3>Ekran Durumları</h3>
+            <h3>Ekran Durumları ve Linkler</h3>
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th>Ekran ID</th>
                         <th>Durum</th>
+                        <th>Player Linki (TV'ye Girilecek)</th>
                         <th>Son Görülme</th>
                         <th>İşlem</th>
                     </tr>
@@ -55,34 +60,52 @@
             const tableBody = document.getElementById('statusTable');
             tableBody.innerHTML = '';
             
+            // Mevcut sitenin ana adresini al (Örn: https://...up.railway.app)
+            const baseUrl = window.location.origin;
+
             for (let id in screens) {
                 const screen = screens[id];
+                const fullPlayerLink = `${baseUrl}/player.html?id=${id}`;
+                
                 const row = `
                     <tr>
                         <td><strong>${id}</strong></td>
                         <td><span class="badge ${screen.status}">${screen.status.toUpperCase()}</span></td>
+                        <td><code class="player-link" title="Tıkla ve Seç" onclick="selectText(this)">${fullPlayerLink}</code></td>
                         <td>${screen.lastSeen || '-'}</td>
-                        <td><button class="edit-btn" onclick="editScreen('${id}', '${screen.url}')">Düzenle</button></td>
+                        <td><button class="edit-btn" onclick="editScreen('${id}', '${screen.url}')">Seç</button></td>
                     </tr>
                 `;
                 tableBody.innerHTML += row;
             }
         });
 
+        // Linke tıklandığında hepsini seçmesi için ufak bir yardımcı
+        function selectText(element) {
+            const range = document.createRange();
+            range.selectNodeContents(element);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+
         function editScreen(id, url) {
             document.getElementById('screenId').value = id;
             document.getElementById('url').value = url;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         async function sendUpdate() {
             const screenId = document.getElementById('screenId').value;
             const url = document.getElementById('url').value;
+            if(!screenId || !url) return alert("Lütfen boş alan bırakmayın.");
+
             await fetch('/update-content', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ screenId, type: 'image', url })
             });
-            alert('Komut Gönderildi!');
+            alert('İçerik gönderildi!');
         }
     </script>
 </body>
