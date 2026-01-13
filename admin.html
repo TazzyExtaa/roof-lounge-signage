@@ -1,76 +1,88 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Roof Lounge Kumanda Merkezi</title>
+    <title>Roof Lounge CMS</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #121212; color: #e0e0e0; text-align: center; }
-        .container { max-width: 500px; margin: auto; background: #1e1e1e; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        h2 { color: #ffcc00; margin-bottom: 20px; }
+        body { font-family: 'Inter', sans-serif; background: #121212; color: white; padding: 20px; }
+        .container { max-width: 800px; margin: auto; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333; }
+        input, button { width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; border: 1px solid #444; box-sizing: border-box; }
+        input { background: #2a2a2a; color: white; }
+        button { background: #007bff; color: white; cursor: pointer; border: none; font-weight: bold; }
         
-        .section { background: #2a2a2a; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333; }
-        label { display: block; text-align: left; font-size: 13px; color: #aaa; margin-bottom: 5px; margin-left: 5px; }
-        
-        input { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #444; background: #333; color: white; font-size: 15px; box-sizing: border-box; }
-        
-        .link-display { background: #000; color: #00ff00; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 13px; word-break: break-all; margin-top: 5px; border: 1px dashed #00ff00; }
-        
-        button { width: 100%; padding: 15px; margin-top: 10px; font-size: 16px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .btn-img { background: #007bff; color: white; }
-        .btn-vid { background: #28a745; color: white; }
-        button:hover { opacity: 0.8; transform: translateY(-2px); }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+        .online { background: #28a745; color: white; }
+        .offline { background: #dc3545; color: white; }
+        .edit-btn { background: #ffcc00; color: black; padding: 5px 10px; font-size: 12px; width: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Roof Lounge Control</h2>
-
-        <div class="section">
-            <label>1. Ekran Kimliği Belirle (TV'ye Özel):</label>
-            <input type="text" id="screenId" placeholder="Örn: salon1, bar-ekran, giris" oninput="generateLink()">
-            
-            <label>TV Tarayıcısına Girilecek Link:</label>
-            <div id="generatedLink" class="link-display">ID Yazınca Link Oluşacak...</div>
+        <h2>Roof Lounge CMS - Yönetim Paneli</h2>
+        
+        <div class="card">
+            <h3>İçerik Gönder / Düzenle</h3>
+            <input type="text" id="screenId" placeholder="Ekran Kimliği (Örn: salon1)">
+            <input type="text" id="url" placeholder="İçerik Linki (.jpg veya .mp4)">
+            <button onclick="sendUpdate()">Ekrana Yansıt</button>
         </div>
 
-        <div class="section">
-            <label>2. Yansıtılacak İçerik Linki:</label>
-            <input type="text" id="url" placeholder="https://resim-veya-video-linki.com">
-            
-            <button class="btn-img" onclick="update('image')">Resmi TV'ye Gönder</button>
-            <button class="btn-vid" onclick="update('video')">Videoyu TV'ye Gönder</button>
+        <div class="card">
+            <h3>Ekran Durumları</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Durum</th>
+                        <th>Son Görülme</th>
+                        <th>İşlem</th>
+                    </tr>
+                </thead>
+                <tbody id="statusTable">
+                    </tbody>
+            </table>
         </div>
     </div>
 
+    <script src="/socket.io/socket.io.js"></script>
     <script>
-        // Sayfa yüklendiğinde ve ID girildiğinde linki oluşturur
-        function generateLink() {
-            const screenId = document.getElementById('screenId').value;
-            const displayDiv = document.getElementById('generatedLink');
+        const socket = io();
+
+        socket.on('status-update', (screens) => {
+            const tableBody = document.getElementById('statusTable');
+            tableBody.innerHTML = '';
             
-            if(screenId) {
-                // Mevcut sitenin ana adresini alıp sonuna player.html ekler
-                const fullLink = window.location.origin + "/player.html?id=" + screenId;
-                displayDiv.innerText = fullLink;
-            } else {
-                displayDiv.innerText = "ID Yazınca Link Oluşacak...";
+            for (let id in screens) {
+                const screen = screens[id];
+                const row = `
+                    <tr>
+                        <td><strong>${id}</strong></td>
+                        <td><span class="badge ${screen.status}">${screen.status.toUpperCase()}</span></td>
+                        <td>${screen.lastSeen || '-'}</td>
+                        <td><button class="edit-btn" onclick="editScreen('${id}', '${screen.url}')">Düzenle</button></td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
             }
+        });
+
+        function editScreen(id, url) {
+            document.getElementById('screenId').value = id;
+            document.getElementById('url').value = url;
         }
 
-        async function update(type) {
+        async function sendUpdate() {
             const screenId = document.getElementById('screenId').value;
             const url = document.getElementById('url').value;
-            
-            if(!screenId || !url) return alert("Lütfen hem Ekran ID hem de içerik linkini girin!");
-
-            const response = await fetch('/update-content', {
+            await fetch('/update-content', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ screenId, type, url })
+                body: JSON.stringify({ screenId, type: 'image', url })
             });
-            
-            if(response.ok) alert(screenId + ' isimli ekran güncellendi!');
-            else alert('Bir hata oluştu!');
+            alert('Komut Gönderildi!');
         }
     </script>
 </body>
