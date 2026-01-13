@@ -1,13 +1,44 @@
-async function sendUpdate() {
-    const screenId = document.getElementById('screenId').value;
-    const url = document.getElementById('url').value;
+<div class="card">
+    <h3>Görsel Yükle ve Yansıt</h3>
+    <input type="text" id="screenId" placeholder="Ekran Kimliği (Örn: salon1)">
     
-    if(!screenId || !url) return alert("ID ve URL boş olamaz!");
+    <label for="fileInput" style="display:block; margin-top:10px; font-size:12px; color:#888;">Görsel Seç (JPG, PNG, JPEG):</label>
+    <input type="file" id="fileInput" accept="image/*">
+    
+    <button id="uploadBtn" onclick="uploadAndSend()" style="margin-top:15px; background:#28a745">Görseli Yükle ve TV'ye Gönder</button>
+    <div id="uploadStatus" style="font-size:12px; margin-top:5px; color:#ffcc00"></div>
+</div>
 
-    // fetch isteği bittikten sonra tablo zaten socket üzerinden anlık güncellenecek
-    await fetch('/update-content', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ screenId, type: 'image', url })
-    });
+<script>
+async function uploadAndSend() {
+    const screenId = document.getElementById('screenId').value;
+    const fileInput = document.getElementById('fileInput');
+    const status = document.getElementById('uploadStatus');
+    const btn = document.getElementById('uploadBtn');
+
+    if(!screenId || !fileInput.files[0]) return alert("Lütfen ID girin ve bir dosya seçin!");
+
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    formData.append('screenId', screenId);
+
+    btn.disabled = true;
+    status.innerText = "Yükleniyor...";
+
+    try {
+        const response = await fetch('/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if(response.ok) {
+            status.innerText = "Başarıyla yüklendi ve yansıtıldı!";
+            fileInput.value = ""; // Seçimi temizle
+        }
+    } catch (err) {
+        status.innerText = "Yükleme hatası!";
+    } finally {
+        btn.disabled = false;
+    }
 }
+</script>
