@@ -1,27 +1,20 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Roof Lounge Player</title>
-    <style>
-        body { margin: 0; overflow: hidden; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        img, video { width: 100%; height: 100%; object-fit: cover; }
-    </style>
-</head>
-<body>
-    <div id="display" style="width: 100%; height: 100%;"></div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    const display = document.getElementById('display');
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-        const display = document.getElementById('display');
+    // URL'den ID'yi al (Örn: player.html?id=salon1)
+    const urlParams = new URLSearchParams(window.location.search);
+    const screenId = urlParams.get('id') || 'varsayilan';
 
-        socket.on('content-changed', (data) => {
-            if (data.type === 'image') {
-                display.innerHTML = `<img src="${data.url}">`;
-            } else if (data.type === 'video') {
-                display.innerHTML = `<video src="${data.url}" autoplay loop muted></video>`;
-            }
-        });
-    </script>
-</body>
-</html>
+    // Sunucuya bu ID ile bağlandığını bildir
+    socket.emit('join-screen', screenId);
+
+    socket.on('content-changed', (data) => {
+        if (data.type === 'image') {
+            display.innerHTML = `<img src="${data.url}" style="width:100%; height:100%; object-fit:cover;">`;
+        } else if (data.type === 'video') {
+            display.innerHTML = `<video src="${data.url}" autoplay loop muted style="width:100%; height:100%; object-fit:cover;"></video>`;
+        }
+    });
+</script>
