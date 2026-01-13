@@ -7,31 +7,46 @@ const path = require('path');
 app.use(express.static(__dirname));
 app.use(express.json());
 
-// Her ekranın son içeriğini hafızada tutan nesne
-let memory = {};
+// Ekran veritabanı (Hafızada tutulur)
+let screens = {}; 
 
 app.post('/update-content', (req, res) => {
     const { screenId, type, url } = req.body;
-    if (!screenId || !url) return res.status(400).send("Eksik bilgi");
-
-    memory[screenId] = { type, url }; // Hafızaya kaydet
-    io.to(screenId).emit('content-changed', memory[screenId]);
+    if (!screens[screenId]) screens[screenId] = {};
     
-    console.log(`Komut Gönderildi: [${screenId}] -> ${url}`);
+    screens[screenId] = { ...screens[screenId], type, url };
+    io.to(screenId).emit('content-changed', { type, url });
+    
+    // Admin paneline güncel listeyi gönder
+    io.emit('status-update', screens); 
     res.status(200).json({ success: true });
 });
 
 io.on('connection', (socket) => {
+    let currentScreenId = null;
+
     socket.on('join-screen', (screenId) => {
+        currentScreenId = screenId;
         socket.join(screenId);
-        console.log(`Ekran Odaya Girdi: ${screenId}`);
         
-        // Ekran bağlandığı an, eğer hafızada bu ID için resim varsa hemen gönder
-        if (memory[screenId]) {
-            socket.emit('content-changed', memory[screenId]);
+        if (!screens[screenId]) screens[screenId] = { type: 'image', url: '' };
+        screens[screenId].status = 'online';
+        screens[screenId].lastSeen = new Date().toLocaleTimeString();
+        
+        io.emit('status-update', screens); // Admini bilgilendir
+        if (screens[screenId].url) socket.emit('content-changed', screens[screenId]);
+    });
+
+    socket.on('disconnect', () => {
+        if (currentScreenId && screens[currentScreenId]) {
+            screens[currentScreenId].status = 'offline';
+            io.emit('status-update', screens); // Admini bilgilendir
         }
     });
+
+    // Admin ilk bağlandığında mevcut listeyi alması için
+    socket.emit('status-update', screens);
 });
 
 const PORT = process.env.PORT || 8080;
-http.listen(PORT, '0.0.0.0', () => console.log('Sunucu Yayında: ' + PORT));
+http.listen(PORT, '0.0.0.0', () => console.log('Sistem Aktif: ' + PORT));
