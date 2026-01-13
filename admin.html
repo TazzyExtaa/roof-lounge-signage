@@ -6,20 +6,23 @@
     <style>
         body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #1a1a1a; color: white; text-align: center; }
         .container { max-width: 400px; margin: auto; background: #2a2a2a; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        h2 { color: #ffcc00; }
         input { width: 100%; padding: 12px; margin: 15px 0; border-radius: 8px; border: none; font-size: 14px; box-sizing: border-box; }
         button { width: 100%; padding: 15px; margin-bottom: 10px; font-size: 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .btn-img { background: #007bff; color: white; }
         .btn-vid { background: #28a745; color: white; }
         button:hover { opacity: 0.8; transform: scale(0.98); }
+        .status { font-size: 12px; color: #888; margin-top: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Roof Lounge Kontrol</h2>
+        <h2>Roof Lounge Control</h2>
         <p>Yansıtmak istediğiniz resim veya video linkini aşağıya yapıştırın.</p>
         <input type="text" id="url" placeholder="https://site.com/resim.jpg">
         <button class="btn-img" onclick="update('image')">Resmi TV'ye Gönder</button>
         <button class="btn-vid" onclick="update('video')">Videoyu TV'ye Gönder</button>
+        <div class="status">Sistem Durumu: Çevrimiçi</div>
     </div>
 
     <script>
@@ -27,15 +30,20 @@
             const url = document.getElementById('url').value;
             if(!url) return alert("Lütfen bir link girin!");
             
-            const response = await fetch('/update-content', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type, url })
-            });
-            
-            if(response.ok) alert('TV Güncellendi!');
-            else alert('Hata oluştu!');
+            try {
+                const response = await fetch('/update-content', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type, url })
+                });
+                
+                if(response.ok) alert('TV Güncellendi!');
+                else alert('Hata oluştu!');
+            } catch (err) {
+                alert('Bağlantı hatası!');
+            }
         }
     </script>
 </body>
 </html>
+
