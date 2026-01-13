@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Roof Lounge Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
+        input, button { width: 100%; padding: 15px; margin-bottom: 10px; font-size: 16px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h2>Roof Lounge Tabela Kontrol</h2>
+    <input type="text" id="url" placeholder="Resim veya Video Linki Yapıştırın">
+    <button onclick="update('image')">Resmi Yansıt</button>
+    <button onclick="update('video')" style="background:#28a745">Videoyu Yansıt</button>
+
+    <script>
+        async function update(type) {
+            const url = document.getElementById('url').value;
+            await fetch('/update-content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, url })
+            });
+            alert('Ekran Güncellendi!');
+        }
+    </script>
+</body>
+</html>
