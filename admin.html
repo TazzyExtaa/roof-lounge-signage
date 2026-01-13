@@ -1,12 +1,13 @@
 <div class="card">
-    <h3>Görsel Yükle ve Yansıt</h3>
+    <h3>Görsel Yükle ve TV'ye Gönder</h3>
     <input type="text" id="screenId" placeholder="Ekran Kimliği (Örn: salon1)">
     
-    <label for="fileInput" style="display:block; margin-top:10px; font-size:12px; color:#888;">Görsel Seç (JPG, PNG, JPEG):</label>
-    <input type="file" id="fileInput" accept="image/*">
+    <div style="margin: 15px 0; padding: 10px; border: 2px dashed #444; border-radius: 8px;">
+        <input type="file" id="fileInput" accept="image/png, image/jpeg, image/jpg">
+    </div>
     
-    <button id="uploadBtn" onclick="uploadAndSend()" style="margin-top:15px; background:#28a745">Görseli Yükle ve TV'ye Gönder</button>
-    <div id="uploadStatus" style="font-size:12px; margin-top:5px; color:#ffcc00"></div>
+    <button id="uploadBtn" onclick="uploadAndSend()" style="background:#28a745">Yükle ve Yansıt</button>
+    <p id="uploadStatus" style="font-size: 12px; color: #ffcc00; margin-top: 10px;"></p>
 </div>
 
 <script>
@@ -16,14 +17,16 @@ async function uploadAndSend() {
     const status = document.getElementById('uploadStatus');
     const btn = document.getElementById('uploadBtn');
 
-    if(!screenId || !fileInput.files[0]) return alert("Lütfen ID girin ve bir dosya seçin!");
+    if(!screenId || !fileInput.files[0]) {
+        return alert("Lütfen hem Ekran ID belirleyin hem de bir dosya seçin!");
+    }
 
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
     formData.append('screenId', screenId);
 
     btn.disabled = true;
-    status.innerText = "Yükleniyor...";
+    status.innerText = "Görsel yükleniyor, lütfen bekleyin...";
 
     try {
         const response = await fetch('/upload', {
@@ -32,11 +35,13 @@ async function uploadAndSend() {
         });
         
         if(response.ok) {
-            status.innerText = "Başarıyla yüklendi ve yansıtıldı!";
-            fileInput.value = ""; // Seçimi temizle
+            status.innerText = "Yükleme başarılı! TV ekranı güncellendi.";
+            fileInput.value = ""; // Formu temizle
+        } else {
+            status.innerText = "Yükleme başarısız oldu.";
         }
     } catch (err) {
-        status.innerText = "Yükleme hatası!";
+        status.innerText = "Bağlantı hatası oluştu.";
     } finally {
         btn.disabled = false;
     }
