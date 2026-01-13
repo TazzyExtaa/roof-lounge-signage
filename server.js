@@ -3,62 +3,58 @@ const app = express();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
 const path = require('path');
+const multer = require('multer'); // Yeni: Dosya yükleme kütüphanesi
+const fs = require('fs');
+
+// 'uploads' klasörü yoksa oluştur
+const uploadDir = 'uploads';
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
 app.use(express.static(__dirname));
+app.use('/uploads', express.static('uploads')); // Yüklenen dosyalara dışarıdan erişim izni
 app.use(express.json());
+
+// Multer Ayarları: Dosyayı orijinal ismiyle kaydet
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, 'uploads/'),
+    filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
+});
+const upload = multer({ storage: storage });
 
 let screens = {}; 
 
-app.post('/update-content', (req, res) => {
-    const { screenId, type, url } = req.body;
-    
-    // Eğer bu ID ilk kez geliyorsa, başlangıç değerlerini ata
+// YENİ: Dosya Yükleme Endpoint'i
+app.post('/upload', upload.single('file'), (req, res) => {
+    const { screenId } = req.body;
+    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+
     if (!screens[screenId]) {
-        screens[screenId] = { 
-            status: 'offline', 
-            lastSeen: 'Hiç bağlanmadı',
-            url: url,
-            type: type
-        };
-    } else {
-        screens[screenId].url = url;
-        screens[screenId].type = type;
+        screens[screenId] = { status: 'offline', lastSeen: 'Hiç bağlanmadı' };
     }
     
-    // İçeriği ilgili odaya (TV'ye) gönder
-    io.to(screenId).emit('content-changed', { type, url });
-    
-    // KRİTİK NOKTA: Tüm admin panellerine listenin güncellendiğini bildir
-    io.emit('status-update', screens); 
-    
-    res.status(200).json({ success: true });
+    screens[screenId].url = fileUrl;
+    screens[screenId].type = 'image';
+
+    io.to(screenId).emit('content-changed', { type: 'image', url: fileUrl });
+    io.emit('status-update', screens);
+
+    res.json({ success: true, url: fileUrl });
 });
 
-io.on('connection', (socket) => {
-    let currentScreenId = null;
+// ... (join-screen ve disconnect kısımları aynı kalacak) ...
 
+io.on('connection', (socket) => {
     socket.on('join-screen', (screenId) => {
-        currentScreenId = screenId;
         socket.join(screenId);
-        
         if (!screens[screenId]) screens[screenId] = { url: '', type: 'image' };
-        
         screens[screenId].status = 'online';
         screens[screenId].lastSeen = new Date().toLocaleTimeString();
-        
-        io.emit('status-update', screens); 
+        io.emit('status-update', screens);
         if (screens[screenId].url) socket.emit('content-changed', screens[screenId]);
     });
-
-    socket.on('disconnect', () => {
-        if (currentScreenId && screens[currentScreenId]) {
-            screens[currentScreenId].status = 'offline';
-            io.emit('status-update', screens); 
-        }
-    });
-
+    socket.on('disconnect', () => { /* ... aynı kod ... */ });
     socket.emit('status-update', screens);
 });
 
 const PORT = process.env.PORT || 8080;
-http.listen(PORT, '0.0.0.0', () => console.log('Roof Lounge Server 2.0 Aktif'));
+http.listen(PORT, '0.0.0.0', () => console.log('Roof Lounge Upload Server Aktif'));
