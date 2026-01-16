@@ -1,49 +1,13 @@
-<div class="card">
-    <h3>Görsel Yükle ve TV'ye Gönder</h3>
-    <input type="text" id="screenId" placeholder="Ekran Kimliği (Örn: salon1)">
-    
-    <div style="margin: 15px 0; padding: 10px; border: 2px dashed #444; border-radius: 8px;">
-        <input type="file" id="fileInput" accept="image/png, image/jpeg, image/jpg">
-    </div>
-    
-    <button id="uploadBtn" onclick="uploadAndSend()" style="background:#28a745">Yükle ve Yansıt</button>
-    <p id="uploadStatus" style="font-size: 12px; color: #ffcc00; margin-top: 10px;"></p>
-</div>
-
-<script>
-async function uploadAndSend() {
+async function sendUpdate() {
     const screenId = document.getElementById('screenId').value;
-    const fileInput = document.getElementById('fileInput');
-    const status = document.getElementById('uploadStatus');
-    const btn = document.getElementById('uploadBtn');
+    const url = document.getElementById('url').value;
+    
+    if(!screenId || !url) return alert("ID ve URL boş olamaz!");
 
-    if(!screenId || !fileInput.files[0]) {
-        return alert("Lütfen hem Ekran ID belirleyin hem de bir dosya seçin!");
-    }
-
-    const formData = new FormData();
-    formData.append('file', fileInput.files[0]);
-    formData.append('screenId', screenId);
-
-    btn.disabled = true;
-    status.innerText = "Görsel yükleniyor, lütfen bekleyin...";
-
-    try {
-        const response = await fetch('/upload', {
-            method: 'POST',
-            body: formData
-        });
-        
-        if(response.ok) {
-            status.innerText = "Yükleme başarılı! TV ekranı güncellendi.";
-            fileInput.value = ""; // Formu temizle
-        } else {
-            status.innerText = "Yükleme başarısız oldu.";
-        }
-    } catch (err) {
-        status.innerText = "Bağlantı hatası oluştu.";
-    } finally {
-        btn.disabled = false;
-    }
+    // fetch isteği bittikten sonra tablo zaten socket üzerinden anlık güncellenecek
+    await fetch('/update-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ screenId, type: 'image', url })
+    });
 }
-</script>
