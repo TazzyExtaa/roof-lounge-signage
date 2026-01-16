@@ -6,16 +6,17 @@ const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
 
-// KRİTİK: Uploads klasörünü güvenli bir şekilde oluştur
+// KRİTİK: 'uploads' klasörünün tam yolunu belirle ve yoksa oluştur
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
 app.use(express.static(__dirname));
-app.use('/uploads', express.static(uploadDir));
+app.use('/uploads', express.static(uploadDir)); // Yüklenen dosyaları dışarı aç
 app.use(express.json());
 
+// Multer Ayarları
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, uploadDir),
     filename: (req, file, cb) => {
@@ -31,7 +32,7 @@ app.post('/upload', upload.single('file'), (req, res) => {
     if (!req.file) return res.status(400).send('Dosya seçilmedi.');
     
     const { screenId } = req.body;
-    // Railway URL'sini dinamik olarak oluştur
+    // Dosyanın internet adresini oluştur (Railway URL'si ile uyumlu)
     const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
 
     if (!screens[screenId]) screens[screenId] = { status: 'offline', lastSeen: 'Hiç bağlanmadı' };
@@ -56,9 +57,9 @@ io.on('connection', (socket) => {
     });
     
     socket.on('disconnect', () => {
-        // Ekran kopma mantığı buraya eklenebilir
+        // Durum güncellemesi eklenebilir
     });
 });
 
 const PORT = process.env.PORT || 8080;
-http.listen(PORT, '0.0.0.0', () => console.log('Sistem Hazır! Port: ' + PORT));
+http.listen(PORT, '0.0.0.0', () => console.log('Roof Lounge Server Aktif! Port: ' + PORT));
