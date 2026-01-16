@@ -1,7 +1,6 @@
 {
   "name": "roof-lounge-signage",
   "version": "1.0.0",
-  "description": "Digital Signage CMS",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
